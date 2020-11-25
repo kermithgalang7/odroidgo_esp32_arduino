@@ -36,8 +36,9 @@
 #define DISPLAY_WIFIMENU    6
 #define DISPLAY_WIFIAPMENU  7
 #define DISPLAY_CUSTOM      8
-#define DISPLAY_ABOUT       9
-#define DISPLAY_TEST       99
+#define DISPLAY_GPIO        9
+#define DISPLAY_ABOUT       90
+#define DISPLAY_TEST        99
 
 #define LED_STAT_ON         0
 #define LED_STAT_OFF        1
@@ -57,6 +58,19 @@
 #define BUT_VOL             8
 #define BUT_SEL             9
 #define BUT_START           10
+
+#define GPIO_PIN2           18  //cannot use, shared with SPI lcd/sdcard
+#define GPIO_PIN3           12
+#define GPIO_PIN4           15
+#define GPIO_PIN5           4
+#define GPIO_PIN7           19  //cannot use, shared with SPI lcd/sdcard
+#define GPIO_PIN8           23  //cannot use, shared with SPI lcd/sdcard
+
+#define GPIO_LOW            0
+#define GPIO_HIGH           1
+#define GPIO_SLOWB          2
+#define GPIO_FASTB          3
+
 
 static esp_adc_cal_characteristics_t adc_chars;
 BluetoothSerial serialBT;
@@ -82,15 +96,13 @@ int wifi_data = 0;
 int wifi_station_debounce = 0;
 const char *ping_host = WIFI_PING_HOST;
 
-int gpio1_mode = 0; //0 - output 1 - input
-int gpio2_mode = 0; //0 - output 1 - input
-int gpio3_mode = 0; //0 - output 1 - input
-int gpio1 = 0;
-int gpio2 = 0;
-int gpio3 = 0;
-int gpo4 = 0;
-int gpo5 = 0;
-int gpo6 = 0;
+int gpio2 = GPIO_LOW;   //conflict with spi, needs to fix
+int gpio3 = GPIO_LOW;   //usable
+int gpio4 = GPIO_LOW;   //usable
+int gpio5 = GPIO_LOW;   //usable
+int gpio7 = GPIO_LOW;   //conflict with spi, needs to fix
+int gpio8 = GPIO_LOW;   //conflict with spi, needs to fix
+int gpio_counter = 0;
 
 String line1 = "";
 String line2 = "";
@@ -256,6 +268,10 @@ int display_service(void)
       if(current_cursor == 4) GO.lcd.setTextColor(YELLOW, RED);
       else GO.lcd.setTextColor(YELLOW, BLACK);
       GO.lcd.setCursor(20, 100);
+      GO.lcd.printf("GPIO Config");
+      if(current_cursor == 5) GO.lcd.setTextColor(YELLOW, RED);
+      else GO.lcd.setTextColor(YELLOW, BLACK);
+      GO.lcd.setCursor(20, 120);
       GO.lcd.printf("About");
 //      GO.lcd.setCursor(20, 120);
 //      GO.lcd.printf("Cursor %d", current_cursor);
@@ -453,6 +469,75 @@ int display_service(void)
       GO.lcd.printf("[%s]", line4);GO.lcd.println("");
       GO.lcd.setCursor(20, 190);
       GO.lcd.printf("[%s]", line5);GO.lcd.println("");
+    break;
+    case DISPLAY_GPIO:
+      GO.lcd.setTextSize(2);
+      GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 20);
+      GO.lcd.printf("GPIO Config          ");
+      if(current_cursor == 0) GO.lcd.setTextColor(ORANGE, RED);
+      else GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 40);
+      if(gpio3 == GPIO_LOW)
+        GO.lcd.printf("  GPIO3 LOW     ");      
+      else if(gpio3 == GPIO_HIGH)
+        GO.lcd.printf("  GPIO3 HIGH    ");      
+      else if(gpio3 == GPIO_SLOWB)
+        GO.lcd.printf("  GPIO3 SLOWB    ");      
+      else
+        GO.lcd.printf("  GPIO3 FASTB    ");      
+      if(current_cursor == 1) GO.lcd.setTextColor(ORANGE, RED);
+      else GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 60);      
+      if(gpio4 == GPIO_LOW)
+        GO.lcd.printf("  GPIO4 LOW     ");      
+      else if(gpio4 == GPIO_HIGH)
+        GO.lcd.printf("  GPIO4 HIGH    ");      
+      else if(gpio4 == GPIO_SLOWB)
+        GO.lcd.printf("  GPIO4 SLOWB    ");      
+      else
+        GO.lcd.printf("  GPIO4 FASTB    ");      
+      if(current_cursor == 2) GO.lcd.setTextColor(ORANGE, RED);
+      else GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 80);
+      if(gpio5 == GPIO_LOW)
+        GO.lcd.printf("  GPIO5 LOW     ");      
+      else if(gpio5 == GPIO_HIGH)
+        GO.lcd.printf("  GPIO5 HIGH    ");      
+      else if(gpio5 == GPIO_SLOWB)
+        GO.lcd.printf("  GPIO5 SLOWB    ");      
+      else
+        GO.lcd.printf("  GPIO5 FASTB    ");      
+      if(current_cursor == 3) GO.lcd.setTextColor(ORANGE, RED);
+      else GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 100);
+      GO.lcd.printf("  Test4          ");
+      if(current_cursor == 4) GO.lcd.setTextColor(ORANGE, RED);
+      else GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(40, 120);
+      GO.lcd.printf("  Test5          ");
+      GO.lcd.setTextSize(1);
+      GO.lcd.setTextColor(ORANGE, BLACK);
+      GO.lcd.setCursor(20, 140);
+      GO.lcd.printf("GPIO Input Status      ");              
+      GO.lcd.setCursor(20, 150);
+      GO.lcd.printf("GPIO3 [%d] ", gpio3);
+      if(gpio3 == GPIO_LOW) GO.lcd.printf("LOW");
+      else if(gpio3 == GPIO_HIGH) GO.lcd.printf("HIGH");
+      else if(gpio3 == GPIO_SLOWB) GO.lcd.printf("Slow Blinking");
+      else  GO.lcd.printf("Fast Blinking");
+      GO.lcd.setCursor(20, 160);
+      GO.lcd.printf("GPIO4 [%d] ", gpio4);
+      if(gpio4 == GPIO_LOW) GO.lcd.printf("LOW");
+      else if(gpio4 == GPIO_HIGH) GO.lcd.printf("HIGH");
+      else if(gpio4 == GPIO_SLOWB) GO.lcd.printf("Slow Blinking");
+      else  GO.lcd.printf("Fast Blinking");
+      GO.lcd.setCursor(20, 170);
+      GO.lcd.printf("GPIO5 [%d] ", gpio5);
+      if(gpio5 == GPIO_LOW) GO.lcd.printf("LOW");
+      else if(gpio5 == GPIO_HIGH) GO.lcd.printf("HIGH");
+      else if(gpio5 == GPIO_SLOWB) GO.lcd.printf("Slow Blinking");
+      else  GO.lcd.printf("Fast Blinking");
     break;
     case DISPLAY_ABOUT:
       GO.lcd.setTextSize(1);
@@ -820,11 +905,94 @@ int ping_test_service(void)
   if(ping_result)
   {
     push_line_message("Success");
-    GO.Speaker.beep();
+    GO.Speaker.tone(3000,200);   
   }
   else
+  {
     push_line_message("Fail   ");
+    GO.Speaker.beep();
+  }
   #endif
+}
+
+void gpio_init(void)
+{
+  pinMode(GPIO_PIN2, OUTPUT);
+  pinMode(GPIO_PIN3, OUTPUT);
+  pinMode(GPIO_PIN4, OUTPUT);
+  pinMode(GPIO_PIN5, OUTPUT);
+  pinMode(GPIO_PIN7, OUTPUT);
+  pinMode(GPIO_PIN8, OUTPUT);
+}
+int gpio_test_service(void)
+{
+//  digitalWrite(GPIO_PIN2, LOW);
+//  digitalWrite(GPIO_PIN3, LOW);
+//  digitalWrite(GPIO_PIN4, LOW);
+//  digitalWrite(GPIO_PIN5, LOW);
+//  digitalWrite(GPIO_PIN7, LOW);
+//  digitalWrite(GPIO_PIN8, LOW);
+  if(gpio3 == GPIO_LOW)
+    digitalWrite(GPIO_PIN3, LOW);
+  if(gpio4 == GPIO_LOW)
+    digitalWrite(GPIO_PIN4, LOW);
+  if(gpio5 == GPIO_LOW)
+    digitalWrite(GPIO_PIN5, LOW);
+  if(gpio3 == GPIO_HIGH)
+    digitalWrite(GPIO_PIN3, HIGH);
+  if(gpio4 == GPIO_HIGH)
+    digitalWrite(GPIO_PIN4, HIGH);
+  if(gpio5 == GPIO_HIGH)
+    digitalWrite(GPIO_PIN5, HIGH);    
+  
+  if(gpio3 == GPIO_SLOWB)
+  {
+    if(gpio_counter <= 200)
+      digitalWrite(GPIO_PIN3, HIGH);
+    if(gpio_counter <= 400)
+      digitalWrite(GPIO_PIN3, LOW);
+  }
+  if(gpio4 == GPIO_SLOWB)
+  {
+    if(gpio_counter <= 200)
+      digitalWrite(GPIO_PIN4, HIGH);
+    if(gpio_counter <= 400)
+      digitalWrite(GPIO_PIN4, LOW);
+  }
+  if(gpio5 == GPIO_SLOWB)
+  {
+    if(gpio_counter <= 200)
+      digitalWrite(GPIO_PIN5, HIGH);
+    if(gpio_counter <= 400)
+      digitalWrite(GPIO_PIN5, LOW);
+  }
+  
+  if(gpio3 == GPIO_FASTB)
+  {
+    if(gpio_counter % 100)
+      digitalWrite(GPIO_PIN3, HIGH);
+    else if(gpio_counter % 50)
+      digitalWrite(GPIO_PIN3, LOW);
+  }
+  if(gpio4 == GPIO_FASTB)
+  {
+    if(gpio_counter % 100)
+      digitalWrite(GPIO_PIN4, HIGH);
+    else if(gpio_counter % 50)
+      digitalWrite(GPIO_PIN4, LOW);
+  }
+  if(gpio5 == GPIO_FASTB)
+  {
+    if(gpio_counter % 100)
+      digitalWrite(GPIO_PIN5, HIGH);
+    else if(gpio_counter % 50)
+      digitalWrite(GPIO_PIN5, LOW);
+  }
+
+  if(gpio_counter <= 400)
+    gpio_counter++;
+  else
+    gpio_counter = 0;
 }
 
 int hardware_init(void)
@@ -838,15 +1006,16 @@ int hardware_init(void)
   for(i = 0; i<5; i++)
   {
     digitalWrite(PIN_BLUE_LED, HIGH);
-    delay(100);
+    delay(50);
     digitalWrite(PIN_BLUE_LED, LOW);
-    delay(100);
+    delay(50);
   }
 
   battery_level_init();
   speaker_init();
   bluetooth_init();
   wifi_init();
+  gpio_init();
   return 0;
 }
 
@@ -897,7 +1066,7 @@ void loop() {
       if(temp == BUT_UP)
         if(current_cursor > 0) current_cursor--;
       if(temp == BUT_DOWN)
-        if(current_cursor < 4) current_cursor++;
+        if(current_cursor < 5) current_cursor++;
       if(temp == BUT_A)
       {
         if(current_cursor == 0)
@@ -921,6 +1090,11 @@ void loop() {
           current_cursor = 0;
         }
         if(current_cursor == 4)
+        {
+          open_menu(DISPLAY_GPIO);
+          current_cursor = 0;
+        }
+        if(current_cursor == 5)
           set_display(DISPLAY_ABOUT);
       }
       if(temp == BUT_B)
@@ -1005,11 +1179,47 @@ void loop() {
         current_cursor = 3;
       }
     break;    
+    case DISPLAY_GPIO:
+      temp = consume_input();
+      if(temp == BUT_UP)
+        if(current_cursor > 0) current_cursor--;
+      if(temp == BUT_DOWN)
+        if(current_cursor < 4) current_cursor++;      
+      if(temp == BUT_A)
+      {
+        if(current_cursor == 0)
+        {
+          if(gpio3 != GPIO_FASTB)
+            gpio3++;
+          else
+            gpio3 = GPIO_LOW;
+        }
+        if(current_cursor == 1)
+        {
+          if(gpio4 != GPIO_FASTB)
+            gpio4++;
+          else
+            gpio4 = GPIO_LOW;
+        }
+        if(current_cursor == 2)
+        {
+          if(gpio5 != GPIO_FASTB)
+            gpio5++;
+          else
+            gpio5 = GPIO_LOW;
+        }
+      }                        
+      if(temp == BUT_B)
+      {
+        set_display(DISPLAY_MAIN);
+        current_cursor = 4;
+      }
+    break;    
     case DISPLAY_ABOUT:
       if(consume_input() == BUT_B)
       {
         set_display(DISPLAY_MAIN);
-        current_cursor = 4;
+        current_cursor = 5;
       }
     break;
     default:
@@ -1025,7 +1235,8 @@ void loop() {
   wifiap_service();
   display_service();
 
-  ping_test_service(); 
+  ping_test_service();   
+  gpio_test_service();
 
   if(program_flow <= 100000)
     program_flow++;
